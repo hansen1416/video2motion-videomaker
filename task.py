@@ -128,9 +128,9 @@ def anim_video(anim_name, lengest_track_len):
 
             # save the frames as a video
             out = cv2.VideoWriter(
-                os.path.join("videos", f"{anim_name}-{elevation}-{azimuth}.mp4"),
-                cv2.VideoWriter_fourcc(*"H264"),
-                60,
+                os.path.join("videos", f"{anim_name}-{elevation}-{azimuth}.avi"),
+                cv2.VideoWriter_fourcc(*"DIVX"),
+                50,
                 (800, 600),
             )
 
