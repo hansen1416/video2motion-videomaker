@@ -1,9 +1,10 @@
-import base64
 import asyncio
 import os
 import json
-
 from multiprocessing import cpu_count
+
+import cv2
+import numpy as np
 from playwright.async_api import async_playwright
 
 
@@ -85,14 +86,33 @@ def get_longest_track(anim_name):
 def anim_video(anim_name, lengest_track_len):
 
     async def main():
+
+        elevation = 30
+        azimuth = 0
+
         async with async_playwright() as p:
             browser = await p.chromium.launch()
             page = await browser.new_page()
 
-            await page.goto(f"http://localhost:5173/dors.glb/{anim_name}/10/30/0")
+            for frame_idx in range(lengest_track_len):
 
-            screenshot_bytes = await page.screenshot()
-            print(base64.b64encode(screenshot_bytes).decode())
+                await page.goto(
+                    f"http://localhost:5173/dors.glb/{anim_name}/{elevation}/{azimuth}/{frame_idx}"
+                )
+
+                # Wait until #done are visible
+                await page.locator("#done").wait_for()
+
+                # `screenshot_bytes` is a bytes object
+                screenshot_bytes = await page.screenshot(type="jpeg")
+                # converts the byte string data into a NumPy array with uint8 data type
+                nparr = np.fromstring(screenshot_bytes, np.uint8)
+                # decodes into an OpenCV format, cv2.IMREAD_COLOR indicating to load a color image.
+                img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+                # print(img_np.shape) (720, 1280, 3)
+
+                break
 
             await browser.close()
 
@@ -101,11 +121,20 @@ def anim_video(anim_name, lengest_track_len):
 
 if __name__ == "__main__":
 
+    counter = 0
+    limit = 1
+
     anim_names = []
 
     # list all files in the directory `anim_eulers`
     for f in os.listdir(ANIM_EULER_DIR):
         anim_names.append(f.replace(".json", ""))
+        counter += 1
+
+        if counter >= limit:
+            break
+
+    print(f"Total number of animations: {len(anim_names)}")
 
     short_anim = []
     long_anim = []
@@ -121,8 +150,17 @@ if __name__ == "__main__":
     # these are the animations that are too short, will not use them
     # print(short_anim, len(short_anim))
 
+    print(f"Total number of long animations: {len(long_anim)}")
+
     # get number of cpu cores
     anim_task_arr = split_array(long_anim, cpu_count())
+
+    for anim_task in anim_task_arr:
+        for anim_name, max_len in anim_task:
+
+            print(f"Processing: {anim_name}, {max_len} frames.")
+
+            anim_video(anim_name, max_len)
 
     # async def main():
     #     async with async_playwright() as p:
