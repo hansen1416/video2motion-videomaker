@@ -111,7 +111,7 @@ def anim_video(anim_name, lengest_track_len):
                 # `screenshot_bytes` is a bytes object
                 screenshot_bytes = await page.screenshot(type="jpeg")
                 # converts the byte string data into a NumPy array with uint8 data type
-                nparr = np.fromstring(screenshot_bytes, np.uint8)
+                nparr = np.frombuffer(screenshot_bytes, np.uint8)
                 # decodes into an OpenCV format, cv2.IMREAD_COLOR indicating to load a color image.
                 img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 # print(img_np.shape)  # (720, 1280, 3)
@@ -121,14 +121,15 @@ def anim_video(anim_name, lengest_track_len):
 
                 frame_data.append(img_np)
 
-                print(f"Frame {frame_idx} done.")
+                if frame_idx % 10 == 0 or frame_idx == lengest_track_len - 1:
+                    print(f"Frame {frame_idx} done.")
 
             await browser.close()
 
             # save the frames as a video
             out = cv2.VideoWriter(
-                f"videos/{anim_name}.avi",
-                cv2.VideoWriter_fourcc(*"DIVX"),
+                os.path.join("videos", f"{anim_name}-{elevation}-{azimuth}.mp4"),
+                cv2.VideoWriter_fourcc(*"H264"),
                 60,
                 (800, 600),
             )
