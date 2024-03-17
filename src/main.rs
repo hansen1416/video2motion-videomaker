@@ -2,9 +2,12 @@ use std::fs;
 use std::fs::File;
 use std::io::{ BufReader, Cursor };
 use std::path::Path;
+use std::env;
 
 use anyhow::Result;
 use headless_chrome::{ protocol::cdp::Page::CaptureScreenshotFormatOption, Browser, LaunchOptions };
+
+mod utils;
 
 fn take_screenshot() -> Result<()> {
     // Create a headless browser, navigate to wikipedia.org, wait for the page
@@ -37,5 +40,28 @@ fn take_screenshot() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    take_screenshot()
+    let path = Ok(match env::home_dir() {
+        Some(path) => println!("{}", path.display()),
+        None => println!("Impossible to get your home dir!"),
+    });
+
+    // get home_dir as a PathBuf
+
+    let path_name = path
+        .unwrap()
+        .unwrap()
+        .join("Documents")
+        .join("video2motion-animplayer")
+        .join("public")
+        .join("anim-json");
+
+    // let paths = fs::read_dir(&path_name).unwrap();
+
+    // for path in paths {
+    //     println!("Name: {}", path.unwrap().path().display());
+    // }
+
+    Ok(())
+
+    // take_screenshot()
 }
