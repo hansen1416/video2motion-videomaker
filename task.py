@@ -5,7 +5,6 @@ import time
 from multiprocessing import cpu_count, Process
 
 import cv2
-import tqdm
 import numpy as np
 from playwright.async_api import async_playwright
 
@@ -116,7 +115,7 @@ async def anim_video(anim_name, lengest_track_len):
 
         frame_data = []
 
-        for frame_idx in tqdm.tqdm(range(lengest_track_len)):
+        for frame_idx in range(lengest_track_len):
 
             await page.goto(
                 f"http://localhost:5173/dors.glb/{anim_name}/{elevation}/{azimuth}/{frame_idx}"
@@ -166,8 +165,10 @@ class GenerateVideoTask(Process):
 
     def run(self) -> None:
 
-        for anim_name, max_len in self.anim_tasks:
-            print(f"{self.queue_idx} Processing: {anim_name}, {max_len} frames.")
+        for i, (anim_name, max_len) in enumerate(self.anim_tasks):
+            print(
+                f"{self.queue_idx} Processing: {anim_name}, {max_len} frames. {i}/{len(self.anim_tasks)}"
+            )
 
             asyncio.run(anim_video(anim_name, max_len))
 
