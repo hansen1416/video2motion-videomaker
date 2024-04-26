@@ -1,15 +1,11 @@
 use std::fs;
-use std::fs::File;
-use std::io::{ BufReader, Cursor };
 use std::path::Path;
 use std::env;
 
 use anyhow::Result;
 use headless_chrome::{ protocol::cdp::Page::CaptureScreenshotFormatOption, Browser, LaunchOptions };
 
-mod utils;
-
-fn take_screenshot() -> Result<()> {
+fn take_screenshot(url: &str) -> Result<()> {
     // Create a headless browser, navigate to wikipedia.org, wait for the page
     // to render completely, take a screenshot of the entire page
     // in JPEG-format using 75% quality.
@@ -18,50 +14,57 @@ fn take_screenshot() -> Result<()> {
         .expect("Couldn't find appropriate Chrome binary.");
     let browser = Browser::new(options)?;
     let tab = browser.new_tab()?;
-    let jpeg_data = tab
-        .navigate_to("http://localhost:5173/glb")?
-        .wait_until_navigated()?
-        .capture_screenshot(CaptureScreenshotFormatOption::Jpeg, Some(75), None, true)?;
+
+    tab.navigate_to(url)?;
+
+    tab.wait_for_element("#done")?;
+
+    let jpeg_data = tab.capture_screenshot(
+        CaptureScreenshotFormatOption::Jpeg,
+        Some(75),
+        None,
+        true
+    )?;
 
     let path = Path::new(".");
 
-    fs::write(path.join("frames").join("screenshot.jpg"), jpeg_data)?;
-
-    // // Browse to the WebKit-Page and take a screenshot of the infobox.
-    // let png_data = tab
-    //     .navigate_to("http://localhost:5173/glb")?
-    //     .wait_for_element("#done")?
-    //     .capture_screenshot(CaptureScreenshotFormatOption::Png)?;
-
-    // fs::write(path.join("frames").join("screenshot.png"), png_data)?;
+    fs::write(path.join("screenshot.jpg"), jpeg_data)?;
 
     println!("Screenshots successfully created.");
     Ok(())
 }
 
 fn main() -> Result<()> {
-    let path = Ok(match env::home_dir() {
-        Some(path) => println!("{}", path.display()),
-        None => println!("Impossible to get your home dir!"),
-    });
+    let mut url: String = "http://localhost:5173".to_string();
 
-    // get home_dir as a PathBuf
+    let mut args = env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match &arg[..] {
+            "-q" | "--quiet" => {
+                println!("Quiet mode is not supported yet.");
+            }
+            "-v" | "--verbose" => {
+                println!("Verbose mode is not supported yet.");
+            }
+            "-u" | "--url" => {
+                if let Some(arg_url) = args.next() {
+                    url = arg_url;
+                } else {
+                    panic!("No value specified for parameter --config.");
+                }
+            }
+            _ => {
+                if arg.starts_with('-') {
+                    println!("Unkown argument {}", arg);
+                } else {
+                    println!("Unkown positional argument {}", arg);
+                }
+            }
+        }
+    }
 
-    let path_name = path
-        .unwrap()
-        .unwrap()
-        .join("Documents")
-        .join("video2motion-animplayer")
-        .join("public")
-        .join("anim-json");
+    // print config
+    println!("taking screenshot from: {}", url);
 
-    // let paths = fs::read_dir(&path_name).unwrap();
-
-    // for path in paths {
-    //     println!("Name: {}", path.unwrap().path().display());
-    // }
-
-    Ok(())
-
-    // take_screenshot()
+    take_screenshot(url.as_str())
 }
